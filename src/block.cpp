@@ -25,6 +25,23 @@ int tlsf_fls(unsigned int word){
     return bit-1;
 }
 
+#elif defined(_MSC_VER) && (_MSC_VER >= 1400) && (defined (_M_IX86) || defined (_M_X64))
+
+#include <intrin.h>
+
+#pragma intrinsic(_BitScanReverse)
+#pragma intrinsic(_BitScanForward)
+
+tlsf_decl int tlsf_fls(unsigned int word){
+	unsigned long index;
+	return _BitScanReverse(&index, word) ? index : -1;
+}
+
+tlsf_decl int tlsf_ffs(unsigned int word) {
+	unsigned long index;
+	return _BitScanForward(&index, word) ? index : -1;
+}
+
 #else 
 //generic implementation
 static inline int tlsf_fls_generic(unsigned int word){
