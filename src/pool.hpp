@@ -77,11 +77,11 @@ class tlsf_pool {
         /**
          * Return the amount of memory available for allocation.
          */
-        inline std::size_t size() {return this->pool_size;}
+        inline std::size_t size() const {return this->pool_size;}
         /**
          * Return the total amount of memory allocated for tlsf_pool.
          */
-        inline std::size_t allocation_size() {return this->allocated_size;}
+        inline std::size_t allocation_size() const {return this->allocated_size;}
         
     private:
         /**

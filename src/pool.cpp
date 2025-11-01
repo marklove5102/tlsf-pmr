@@ -458,7 +458,7 @@ void* tlsf_pool::realloc_pool(void* ptr, std::size_t size){
         p = this->malloc_pool(size);
     }
     else {
-        block_header* block = block->from_void_ptr(ptr);
+        block_header* block = block_header::from_void_ptr(ptr);
         block_header* next = block->get_next();
         
         const size_t cursize = block->get_size();
