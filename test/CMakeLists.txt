@@ -13,10 +13,12 @@ set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
 
+include(GoogleTest)
 enable_testing()
 
 add_executable(
     tlsf_test
+    test_bits.cpp
     test_tlsf_resource.cpp
     test_block.cpp
     test_pool.cpp
@@ -25,12 +27,13 @@ add_executable(
 
 target_link_libraries(
     tlsf_test
+    PRIVATE
     tlsf_resource
     gtest_main
+    gmock
     )
 
 # message(STATUS "Enabling sanitizers for tlsf_test")
-target_compile_options(tlsf_test INTERFACE -g -fsanitize=memory)
+# target_compile_options(tlsf_test PRIVATE -g -fsanitize=memory)
         
-include(GoogleTest)
 gtest_discover_tests(tlsf_test)

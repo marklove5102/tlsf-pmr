@@ -4,6 +4,7 @@
 #include <cassert>
 #include <cstring>
 #include <memory_resource>
+#include <iostream>
 
 namespace tlsf {
 using namespace detail;
@@ -45,6 +46,7 @@ tlsf_pool::tlsf_pool(tlsf_pool&& other) noexcept:
 {
     std::memcpy(sl_bitmap, other.sl_bitmap, sizeof(sl_bitmap));
     std::memcpy(blocks, other.blocks, sizeof(blocks));
+    this->replace_block_null(&other.block_null);
 
     // IMPORTANT: nullify the moved-from object's pointer to prevent double-free
     other.memory_pool = nullptr;
@@ -66,6 +68,7 @@ tlsf_pool& tlsf_pool::operator=(tlsf_pool&& other) noexcept {
         this->fl_bitmap = other.fl_bitmap;
         std::memcpy(sl_bitmap, other.sl_bitmap, sizeof(sl_bitmap));
         std::memcpy(blocks, other.blocks, sizeof(blocks));
+        this->replace_block_null(&other.block_null);
 
         //IMPORTANT: nullify the moved-from object's pointer to prevent double-free
         other.memory_pool = nullptr;
@@ -111,6 +114,16 @@ void tlsf_pool::initialize(std::size_t bytes){
         this->upstream->deallocate(allocated_mem, this->allocated_size, ALIGN_SIZE);
     } else {
         this->memory_pool = static_cast<char*>(allocated_mem);
+    }
+}
+
+void tlsf_pool::replace_block_null(detail::block_header* prev_null) {
+    //replace all instances of a pre-existing null block with the current null block
+    for (int i = 0; i < FL_INDEX_COUNT; ++i) {
+        for (int j = 0; j < SL_INDEX_COUNT; ++j) {
+            if (this->blocks[i][j] == prev_null) 
+                this->blocks[i][j] = &block_null;
+        }
     }
 }
 
@@ -175,10 +188,16 @@ void tlsf_pool::remove_free_block(block_header* block, int fl, int sl){
 
         //if the new head is null, clear the bitmap
         if (next == &this->block_null) {
+            std::cerr << "Clearing bitmaps for fl=" << fl << ", sl=" << sl 
+              << " (was head, now empty)\n";
             sl_bitmap[fl] &= ~(1U << sl);
             // if the second bitmap is empty, clear the fl bitmap
             if (!sl_bitmap[fl]) {
                 fl_bitmap &= ~(1U << fl);
+            } 
+            else {
+                std::cerr << "Removing non-head block from fl=" << fl << ", sl=" << sl 
+              << " (head is " << this->blocks[fl][sl] << ", removed " << block << ")\n";
             }
         }
 
@@ -199,6 +218,8 @@ void tlsf_pool::insert_free_block(block_header* block, int fl, int sl){
     block->next_free = current;
     block->prev_free = &this->block_null;
     current->prev_free = block;
+    std::cerr << "Inserted block " << block << " at fl=" << fl << ", sl=" << sl 
+          << " (size=" << block->get_size() << ")\n";
 
     assert(block->to_void_ptr() == align_ptr(block->to_void_ptr(), ALIGN_SIZE) && "block not aligned properly");
 
@@ -225,6 +246,7 @@ block_header* tlsf_pool::search_suitable_block(int* fli, int* sli){
         // check if there is a block located in the right index, or higher
         const unsigned int fl_map = this->fl_bitmap & (~0U << (fl+1));
         if (!fl_map){
+
             /* no free blocks available, memory has been exhausted. */
             return nullptr;
         }
@@ -238,7 +260,18 @@ block_header* tlsf_pool::search_suitable_block(int* fli, int* sli){
     sl = tlsf_ffs(sl_map);
     *sli = sl;
 
-    return this->blocks[fl][sl];
+    block_header* block = this->blocks[fl][sl];
+    if (block->get_size() == 0) {
+        std::cerr << "Block size at fl: " << fl << ", sl: " << sl << " is 0.\n";
+    }
+    if (block == &block_null) {
+        std::cerr << "ERROR: blocks[" << fl << "][" << sl << "] points to sentinel!\n";
+        std::cerr << "fl_bitmap bit " << fl << " = " << ((fl_bitmap >> fl) & 1) << "\n";
+        std::cerr << "sl_bitmap[" << fl << "] bit " << sl << " = " 
+                << ((sl_bitmap[fl] >> sl) & 1) << "\n";
+        return nullptr;  // temporary fix
+    }
+    return block;
 }
 
 /**
@@ -371,7 +404,11 @@ block_header* tlsf_pool::locate_free(std::size_t size){
         }
     }
     if (block){
-        assert(block->get_size() >= size);
+        if (block->get_size() < size) {
+            std::cerr << "Block size: " << block->get_size() << ", requested size: " << size << "\n";
+        }
+        assert(block->get_size() >= size && "Allocated block is smaller than requested size.");
+        
         this->remove_free_block(block, fl, sl);
     }
     return block;
@@ -403,7 +440,7 @@ void* tlsf_pool::prepare_used(block_header* block, std::size_t size){
  */
 void* tlsf_pool::malloc_pool(std::size_t size){
     const std::size_t adjust = adjust_request_size(size, ALIGN_SIZE);
-    block_header* block = this->locate_free(size);
+    block_header* block = this->locate_free(adjust);
 
     return this->prepare_used(block, adjust);
 }

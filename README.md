@@ -121,6 +121,14 @@ pool_options options {
 tlsf_resource resource(options); //use monotonic_buffer_resource to allocate pool
 ```
 
+### Error handling
+
+The approach to error handling depends on the abstraction level. If memory allocation fails:
+* The higher-level `tlsf_resource` and `synchronized_tlsf_resource` will throw exceptions. 
+* The lower-level `tlsf_pool` will return `nullptr` or `false` values, depending on the method.
+
+This is to maintain consistency with C++-style and C-style APIs, respectively.
+
 ## Disclaimer on performance
 Note that deterministic latency $\neq$ good performance! In fact, these two qualities are often (but not always) to the detriment of each other. Instrument and test your code before drawing conclusions, and make decisions on your allocation scheme based on your specific combination of hardware, operational requirements and test results. Make sure you actually need deterministic latency—in my experience, situations that truly require it are quite rare.  
 

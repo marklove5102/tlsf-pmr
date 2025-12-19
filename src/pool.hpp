@@ -112,6 +112,7 @@ class tlsf_pool {
         detail::block_header* blocks[detail::FL_INDEX_COUNT][detail::SL_INDEX_COUNT];
 
         void initialize(std::size_t size);
+        void replace_block_null(detail::block_header* prev_null);
 
         char* create_memory_pool(char* pool, std::size_t bytes);
         
