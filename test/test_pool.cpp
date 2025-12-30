@@ -206,6 +206,55 @@ TEST_F(MallocPoolTests, exhaustMemory) {
     }
 }
 
+TEST_F(MallocPoolTests, exhaustMemoryDirectConstruction) {
+    std::vector<void*> ptrs;
+    const std::size_t alloc_size = 4096;
+
+    tlsf_pool direct_pool(1024*1024);
+
+    // Keep allocating until we run out of memory
+    // Pool exhaustion might trigger system memory allocation which could throw
+    try {
+        while (true) {
+            void* ptr = direct_pool.malloc_pool(alloc_size);
+            if (!ptr) {
+                break;
+            }
+            ptrs.push_back(ptr);
+
+            // Safety limit to avoid infinite loop or excessive memory use
+            if (ptrs.size() > 1000) {
+                break;
+            }
+        }
+    } catch (const std::bad_alloc&) {
+        // This can happen if the pool's upstream resource runs out
+    }
+
+    EXPECT_GT(ptrs.size(), 0u);
+    std::vector<bool> free_results;
+
+    // Free all allocations
+    for (void* ptr : ptrs) {
+        free_results.push_back(direct_pool.free_pool(ptr));
+    }
+
+    EXPECT_THAT(free_results, ::testing::Each(true)) 
+        << "Pool is allocating memory it is not responsible for. Total size: " << free_results.size() << "\n";
+
+    // for (int i = 0; i < ptrs.size(); i++) {
+    //     std::cerr << "[" << i << "]: " << ptrs[i] << "\n";
+    // }
+    
+
+    // After freeing, should be able to allocate again
+    void* ptr = direct_pool.malloc_pool(alloc_size);
+    EXPECT_NE(ptr, nullptr);
+    if (ptr) {
+        EXPECT_TRUE(direct_pool.free_pool(ptr));
+    }
+}
+
 TEST_F(MallocPoolTests, allocationSizeAlignment) {
     using namespace tlsf::detail;
 

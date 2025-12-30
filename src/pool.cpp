@@ -17,15 +17,18 @@ using tlsfptr_t = std::ptrdiff_t;
 
 
 std::optional<tlsf_pool> tlsf_pool::create(std::size_t bytes, std::pmr::memory_resource* upstream) {
-    tlsf_pool pool(bytes, upstream);
+    std::optional<tlsf_pool> opt;
+
+    opt.emplace(bytes, upstream);
+
 
     //Constructor will set memory_pool to nullptr on failure.
     //Check that initialization was successful.
-    if (!pool.is_allocated()) {
+    if (!opt->is_allocated()) {
         return std::nullopt;
     }
     //pool is move constructed inside optional object otherwise.
-    return pool; 
+    return opt; 
 }
 
 std::optional<tlsf_pool> tlsf_pool::create(pool_options options) {
@@ -52,6 +55,7 @@ tlsf_pool::tlsf_pool(tlsf_pool&& other) noexcept:
     other.memory_pool = nullptr;
     other.pool_size = 0;
     other.allocated_size = 0;
+    std::cerr << "Copy constructor block_null address: " << &this->block_null << std::endl;
 
 }
 
@@ -74,6 +78,7 @@ tlsf_pool& tlsf_pool::operator=(tlsf_pool&& other) noexcept {
         other.memory_pool = nullptr;
         other.pool_size = 0;
         other.allocated_size = 0;
+        std::cerr << "Assignment operator block_null address: " << &this->block_null << std::endl;
     }
     return *this;
 }
@@ -115,6 +120,7 @@ void tlsf_pool::initialize(std::size_t bytes){
     } else {
         this->memory_pool = static_cast<char*>(allocated_mem);
     }
+    std::cerr << "Block null address: " << &block_null << std::endl;
 }
 
 void tlsf_pool::replace_block_null(detail::block_header* prev_null) {
