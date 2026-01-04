@@ -103,7 +103,7 @@ class tlsf_pool {
             return sizeof(*this);
         }
         //reference empty block
-        detail::block_header block_null;
+        static detail::block_header block_null;
 
         unsigned int fl_bitmap;
         unsigned int sl_bitmap[detail::FL_INDEX_COUNT];
