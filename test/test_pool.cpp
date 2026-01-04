@@ -587,7 +587,7 @@ TEST_F(FuzzingTests, randomAllocFreeSequence) {
 
             if (ptr) {
                 using namespace tlsf::detail;
-                Allocation alloc{ptr, size, ALIGN_SIZE, pattern_dist(rng)};
+                Allocation alloc{ptr, size, ALIGN_SIZE, static_cast<uint8_t>(pattern_dist(rng))};
                 std::memset(ptr, alloc.pattern, size);
                 allocations.push_back(alloc);
             }
@@ -611,7 +611,7 @@ TEST_F(FuzzingTests, randomAllocFreeSequence) {
             void* ptr = pool->memalign_pool(alignment, size);
 
             if (ptr) {
-                Allocation alloc{ptr, size, alignment, pattern_dist(rng)};
+                Allocation alloc{ptr, size, alignment, static_cast<uint8_t>(pattern_dist(rng))};
                 std::memset(ptr, alloc.pattern, size);
                 allocations.push_back(alloc);
             }
@@ -642,7 +642,7 @@ TEST_F(FuzzingTests, stressTestWithRealloc) {
 
             if (ptr) {
                 using namespace tlsf::detail;
-                Allocation alloc{ptr, size, ALIGN_SIZE, pattern_dist(rng)};
+                Allocation alloc{ptr, size, ALIGN_SIZE, static_cast<uint8_t>(pattern_dist(rng))};
                 std::memset(ptr, alloc.pattern, size);
                 allocations.push_back(alloc);
             }
@@ -693,7 +693,7 @@ TEST_F(FuzzingTests, stressTestWithRealloc) {
             void* ptr = pool->memalign_pool(alignment, size);
 
             if (ptr) {
-                Allocation alloc{ptr, size, alignment, pattern_dist(rng)};
+                Allocation alloc{ptr, size, alignment, static_cast<uint8_t>(pattern_dist(rng))};
                 std::memset(ptr, alloc.pattern, size);
                 allocations.push_back(alloc);
             }
