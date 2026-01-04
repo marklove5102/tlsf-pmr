@@ -255,9 +255,6 @@ block_header* tlsf_pool::search_suitable_block(int* fli, int* sli){
     *sli = sl;
 
     block_header* block = this->blocks[fl][sl];
-    if (block == &block_null) {
-        return nullptr;  // temporary fix
-    }
     return block;
 }
 

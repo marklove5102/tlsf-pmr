@@ -9,6 +9,7 @@ TEST(UtilityTests, voidPtrConversionIsReversible){
     header->set_size(128);
     
     EXPECT_EQ(header, block_header::from_void_ptr(header->to_void_ptr()));
+    delete header;
 }
 
 TEST(UtilityTests, alignPtrCorrect){

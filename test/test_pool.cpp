@@ -190,13 +190,8 @@ TEST_F(MallocPoolTests, exhaustMemory) {
         free_results.push_back(pool->free_pool(ptr));
     }
 
-    EXPECT_THAT(free_results, ::testing::Each(true)) 
+    EXPECT_THAT(free_results, ::testing::Each(true))
         << "Pool is allocating memory it is not responsible for. Total size: " << free_results.size() << "\n";
-
-    // for (int i = 0; i < ptrs.size(); i++) {
-    //     std::cerr << "[" << i << "]: " << ptrs[i] << "\n";
-    // }
-    
 
     // After freeing, should be able to allocate again
     void* ptr = pool->malloc_pool(alloc_size);
@@ -239,13 +234,8 @@ TEST_F(MallocPoolTests, exhaustMemoryDirectConstruction) {
         free_results.push_back(direct_pool.free_pool(ptr));
     }
 
-    EXPECT_THAT(free_results, ::testing::Each(true)) 
+    EXPECT_THAT(free_results, ::testing::Each(true))
         << "Pool is allocating memory it is not responsible for. Total size: " << free_results.size() << "\n";
-
-    // for (int i = 0; i < ptrs.size(); i++) {
-    //     std::cerr << "[" << i << "]: " << ptrs[i] << "\n";
-    // }
-    
 
     // After freeing, should be able to allocate again
     void* ptr = direct_pool.malloc_pool(alloc_size);

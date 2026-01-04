@@ -6,17 +6,13 @@
 
 using TVal = int;
 
-// utility memory resource for debugging purposes
-class print_resource : public std::pmr::memory_resource {
+// simple passthrough memory resource for testing
+class test_resource : public std::pmr::memory_resource {
     private:
         void* do_allocate(std::size_t bytes, std::size_t ) override {
-            void* result = malloc(bytes);
-            fprintf(stderr, "Allocated %u bytes at memory location %p\n", bytes, result);
-            return result;
-            
+            return malloc(bytes);
         }
         void do_deallocate(void* p, std::size_t , std::size_t ) override {
-            fprintf(stderr, "Freeing memory at address %p\n", p);
             free(p);
         }
 
@@ -25,10 +21,10 @@ class print_resource : public std::pmr::memory_resource {
         }
 };
 
-print_resource print_res;
+test_resource test_res;
 
  
-tlsf::pool_options options {5000*sizeof(TVal), &print_res};
+tlsf::pool_options options {5000*sizeof(TVal), &test_res};
 
 class TLSFVectorTests: public ::testing::Test {
     protected:

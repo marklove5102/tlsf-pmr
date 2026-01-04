@@ -70,10 +70,6 @@ int tlsf_fls(unsigned int word){
  * 64-bit version of TLSF fls
  */
 #ifdef TLSF_64BIT
-// static inline int tlsf_fls_sizet(size_t size){
-//     return tlsf_fls(size);
-// }
-
 int tlsf_fls_sizet(size_t size){
     int high = static_cast<int>(size >> 32);
     int bits = 0;
@@ -261,7 +257,6 @@ block_header* block_header::from_void_ptr(const void* ptr){
     //note the intermediate conversion to unsigned char ptr is to get 1-byte arithmetic.
     const uint8_t* byte_ptr = static_cast<const uint8_t*>(ptr);
     return reinterpret_cast<block_header*>(const_cast<uint8_t*>(byte_ptr) - BLOCK_START_OFFSET);
-    // return TLSF_CAST(block_header*, TLSF_CAST(unsigned char*, ptr) - BLOCK_START_OFFSET);
 }
 
 /**
