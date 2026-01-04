@@ -96,7 +96,7 @@ resource.create_memory_pool(options2, true)
 ### Working with memory pools directly
 If you need a TLSF allocator but do not want to use the standard library allocator API, you can work directly with the underlying memory pool, `tlsf_pool`. It has a lower-level API consisting of `malloc_pool`, `free_pool`, `realloc_pool` and `memalign_pool`. These have the same API as the corresponding cstdlib functions.
 
-`tlsf_pool` must be constructed through the static `create` method, which returns a `std::optional` object that is empty if the pool memory allocation has failed.
+It is recommended that `tlsf_pool` be constructed through the static `create` method, which returns a `std::optional` object that is empty if the pool memory allocation has failed.
 ```cpp
 #include <optional>
 
@@ -118,7 +118,33 @@ pool_options options {
     &upstream,
 };
 
-tlsf_resource resource(options); //use monotonic_buffer_resource to allocate pool
+std::optional<tlsf_pool> pool = tlsf_pool::create(options); //use monotonic_buffer_resource to allocate pool
+```
+If you don't want to use `std::optional`, then you can also use the `tlsf_pool` constructor directly. In this case, you must manually check that the pool was successfully allocated, as `tlsf_pool` does not enforce it by itself:
+```cpp
+
+tlsf_pool pool(5'000'000); //create pool
+
+//Must manually check that allocation was successful. 
+if (!pool.is_allocated()) { 
+    //fallback if allocation fails
+}
+
+``` 
+
+As with the `create` method, the `tlsf_pool` constructor also accepts `pool_options` as an argument:
+```cpp
+pool_options options {
+    5'000'000,
+    &upstream,
+};
+
+tlsf_pool pool(options); //initialize using pool_options
+
+//Allocation can still fail silently with a custom memory allocator
+if (!pool.is_allocated()) {
+    //...
+}
 ```
 
 ### Error handling
