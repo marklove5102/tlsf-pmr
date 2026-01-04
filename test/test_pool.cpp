@@ -573,7 +573,7 @@ protected:
 TEST_F(FuzzingTests, randomAllocFreeSequence) {
     std::vector<Allocation> allocations;
     std::uniform_int_distribution<int> action_dist(0, 2); // 0=alloc, 1=free, 2=aligned alloc
-    std::uniform_int_distribution<uint8_t> pattern_dist(0, 255);
+    std::uniform_int_distribution<unsigned int> pattern_dist(0, 255);
 
     const int num_operations = 1000;
 
@@ -628,7 +628,7 @@ TEST_F(FuzzingTests, randomAllocFreeSequence) {
 TEST_F(FuzzingTests, stressTestWithRealloc) {
     std::vector<Allocation> allocations;
     std::uniform_int_distribution<int> action_dist(0, 3); // 0=alloc, 1=free, 2=realloc, 3=aligned
-    std::uniform_int_distribution<uint8_t> pattern_dist(0, 255);
+    std::uniform_int_distribution<unsigned int> pattern_dist(0, 255);
 
     const int num_operations = 500;
 
