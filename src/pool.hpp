@@ -83,7 +83,6 @@ class tlsf_pool {
          */
         inline std::size_t allocation_size() const {return this->allocated_size;}
         
-    private:
         /**
          * @brief Main constructor for `tlsf_pool`. Constructors are private so that pool initialization has to 
          * go through the `create` method, which can fail. 
@@ -93,6 +92,7 @@ class tlsf_pool {
         explicit tlsf_pool() { this->initialize(DEFAULT_POOL_SIZE); }
         explicit tlsf_pool(pool_options options) : upstream(options.upstream_resource) 
         {this->initialize(options.size); }
+    private:
             
         using tlsfptr_t = ptrdiff_t;
        
@@ -103,7 +103,7 @@ class tlsf_pool {
             return sizeof(*this);
         }
         //reference empty block
-        detail::block_header block_null;
+        static detail::block_header block_null;
 
         unsigned int fl_bitmap;
         unsigned int sl_bitmap[detail::FL_INDEX_COUNT];

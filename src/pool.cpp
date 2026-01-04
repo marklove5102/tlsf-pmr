@@ -14,17 +14,22 @@ static_assert(sizeof(size_t) * CHAR_BIT <= 64);
 
 using tlsfptr_t = std::ptrdiff_t; 
 
+//initialize guard block
+detail::block_header tlsf_pool::block_null{};
 
 std::optional<tlsf_pool> tlsf_pool::create(std::size_t bytes, std::pmr::memory_resource* upstream) {
-    tlsf_pool pool(bytes, upstream);
+    std::optional<tlsf_pool> opt;
+
+    opt.emplace(bytes, upstream);
+
 
     //Constructor will set memory_pool to nullptr on failure.
     //Check that initialization was successful.
-    if (!pool.is_allocated()) {
+    if (!opt->is_allocated()) {
         return std::nullopt;
     }
     //pool is move constructed inside optional object otherwise.
-    return pool; 
+    return opt; 
 }
 
 std::optional<tlsf_pool> tlsf_pool::create(pool_options options) {
@@ -40,7 +45,6 @@ tlsf_pool::tlsf_pool(tlsf_pool&& other) noexcept:
     upstream(other.upstream), 
     pool_size(other.pool_size),
     allocated_size(other.allocated_size),
-    block_null(other.block_null),
     fl_bitmap(other.fl_bitmap) 
 {
     std::memcpy(sl_bitmap, other.sl_bitmap, sizeof(sl_bitmap));
@@ -62,7 +66,6 @@ tlsf_pool& tlsf_pool::operator=(tlsf_pool&& other) noexcept {
         this->upstream = other.upstream;
         this->pool_size = other.pool_size;
         this->allocated_size = other.allocated_size;
-        this->block_null = other.block_null;
         this->fl_bitmap = other.fl_bitmap;
         std::memcpy(sl_bitmap, other.sl_bitmap, sizeof(sl_bitmap));
         std::memcpy(blocks, other.blocks, sizeof(blocks));
@@ -86,10 +89,12 @@ tlsf_pool::~tlsf_pool(){
 void tlsf_pool::initialize(std::size_t bytes){
     this->allocated_size = bytes;
     void* allocated_mem = this->upstream->allocate(bytes, ALIGN_SIZE);
-
-    block_null = block_header();
-    block_null.next_free = &block_null;
-    block_null.prev_free = &block_null;
+    
+    //static members are zero-initialized, so check once
+    if (block_null.next_free == nullptr){
+        block_null.next_free = &block_null;
+        block_null.prev_free = &block_null;
+    }
 
     this->fl_bitmap = 0;
 
@@ -179,7 +184,7 @@ void tlsf_pool::remove_free_block(block_header* block, int fl, int sl){
             // if the second bitmap is empty, clear the fl bitmap
             if (!sl_bitmap[fl]) {
                 fl_bitmap &= ~(1U << fl);
-            }
+            } 
         }
 
     }
@@ -225,6 +230,7 @@ block_header* tlsf_pool::search_suitable_block(int* fli, int* sli){
         // check if there is a block located in the right index, or higher
         const unsigned int fl_map = this->fl_bitmap & (~0U << (fl+1));
         if (!fl_map){
+
             /* no free blocks available, memory has been exhausted. */
             return nullptr;
         }
@@ -238,7 +244,8 @@ block_header* tlsf_pool::search_suitable_block(int* fli, int* sli){
     sl = tlsf_ffs(sl_map);
     *sli = sl;
 
-    return this->blocks[fl][sl];
+    block_header* block = this->blocks[fl][sl];
+    return block;
 }
 
 /**
@@ -371,7 +378,8 @@ block_header* tlsf_pool::locate_free(std::size_t size){
         }
     }
     if (block){
-        assert(block->get_size() >= size);
+        assert(block->get_size() >= size && "Allocated block is smaller than requested size.");
+        
         this->remove_free_block(block, fl, sl);
     }
     return block;
@@ -403,7 +411,7 @@ void* tlsf_pool::prepare_used(block_header* block, std::size_t size){
  */
 void* tlsf_pool::malloc_pool(std::size_t size){
     const std::size_t adjust = adjust_request_size(size, ALIGN_SIZE);
-    block_header* block = this->locate_free(size);
+    block_header* block = this->locate_free(adjust);
 
     return this->prepare_used(block, adjust);
 }
