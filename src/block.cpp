@@ -32,12 +32,12 @@ int tlsf_fls(unsigned int word){
 #pragma intrinsic(_BitScanReverse)
 #pragma intrinsic(_BitScanForward)
 
-inline int tlsf_fls(unsigned int word){
+int tlsf_fls(unsigned int word){
 	unsigned long index;
 	return _BitScanReverse(&index, word) ? index : -1;
 }
 
-inline int tlsf_ffs(unsigned int word) {
+int tlsf_ffs(unsigned int word) {
 	unsigned long index;
 	return _BitScanForward(&index, word) ? index : -1;
 }
