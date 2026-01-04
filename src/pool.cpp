@@ -119,16 +119,6 @@ void tlsf_pool::initialize(std::size_t bytes){
     }
 }
 
-void tlsf_pool::replace_block_null(detail::block_header* prev_null) {
-    //replace all instances of a pre-existing null block with the current null block
-    for (int i = 0; i < FL_INDEX_COUNT; ++i) {
-        for (int j = 0; j < SL_INDEX_COUNT; ++j) {
-            if (this->blocks[i][j] == prev_null) 
-                this->blocks[i][j] = &block_null;
-        }
-    }
-}
-
 char* tlsf_pool::create_memory_pool(char* mem, std::size_t bytes){
     block_header* block;
     block_header* next;
